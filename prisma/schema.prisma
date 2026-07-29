@@ -1,0 +1,80 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/client"
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+}
+
+model User {
+  id                            String                    @id @default(uuid())
+  email                         String                    @unique @db.Citext
+  name                          String
+  passwordHash                  String
+  isEmailVerified               Boolean                   @default(false)
+  verificationTokenHash         String?                   @unique
+  verificationTokenExpires      DateTime?                 @db.Timestamptz(3)
+  tokenVersion                  Int                       @default(1)
+  createdAt                     DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt                     DateTime                  @updatedAt @db.Timestamptz(3)
+
+  bookings                      Booking[]                 @relation("UserBookings")
+  cancelledBookings             Booking[]                 @relation("UserCancelledBookings")
+
+  @@map("users")
+}
+
+model Room {
+  id                            String                    @id @default(uuid())
+  name                          String                    @unique
+  floor                         Int
+  capacity                      Int
+  createdAt                     DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt                     DateTime                  @updatedAt @db.Timestamptz(3)
+  bookings                      Booking[]
+
+  @@map("rooms")
+}
+
+model Booking {
+  id                            String                    @id @default(uuid())
+  title                         String
+  startTime                     DateTime                  @db.Timestamptz(3)
+  endTime                       DateTime                  @db.Timestamptz(3)
+  status                        BookingStatus             @default(ACTIVE)
+  cancelledAt                   DateTime?                 @db.Timestamptz(3)
+  cancelledByUserId             String?
+  roomId                        String
+  userId                        String
+  
+  recurringSeriesId             String?
+  recurrenceIndex               Int?
+
+  createdAt                     DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt                     DateTime                  @updatedAt @db.Timestamptz(3)
+
+  room                          Room                      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user                          User                      @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+  cancelledByUser               User?                     @relation("UserCancelledBookings", fields: [cancelledByUserId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, startTime])
+  @@index([userId, startTime])
+  @@index([recurringSeriesId])
+  @@map("bookings")
+}
+
+model NotificationDeliveryLog {
+  id                            String                    @id @default(uuid())
+  bookingId                     String
+  userId                        String
+  sentAt                        DateTime                  @default(now()) @db.Timestamptz(3)
+
+  @@unique([bookingId, userId])
+  @@map("notification_delivery_logs")
+}
