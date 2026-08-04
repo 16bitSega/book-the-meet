@@ -190,7 +190,16 @@ export async function POST(req: NextRequest) {
   const seriesId = effectiveCount > 1 ? crypto.randomUUID() : null;
 
   try {
-    const bookingInstances = [];
+    const bookingInstances: {
+      title: string;
+      startTime: Date;
+      endTime: Date;
+      status: "ACTIVE";
+      roomId: string;
+      userId: string;
+      recurringSeriesId: string | null;
+      recurrenceIndex: number | null;
+    }[] = [];
 
     // Calculate initial wall-clock start/end in Kyiv timezone
     const startKyiv = toZonedTime(startTime, KYIV_TIMEZONE);
@@ -255,7 +264,6 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    // Catch PostgreSQL GiST exclusion violation (23P01) or check constraint (23514)
     if (error.code === "P2010" || error.message?.includes("23P01") || error.message?.includes("no_overlapping_bookings")) {
       return NextResponse.json(
         { error: "SLOT_OVERLAP", message: "The selected time slot is already booked for this room." },

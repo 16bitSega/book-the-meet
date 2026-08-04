@@ -1,4 +1,4 @@
-import { PrismaClient } from "../src/generated/client";
+import { PrismaClient } from "../src/generated/client/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -63,21 +63,17 @@ async function main() {
   console.log(`✅ Seeded test users: admin@office.com & user@office.com`);
 
   // 3. Seed Relative-Date Demo Bookings
-  // Calculate relative dates for current week Monday & Tuesday in Kyiv
   const nowKyiv = toZonedTime(new Date(), KYIV_TZ);
   const mondayKyiv = startOfWeek(nowKyiv, { weekStartsOn: 1 });
   const tuesdayKyiv = addDays(mondayKyiv, 1);
   const wednesdayKyiv = addDays(mondayKyiv, 2);
 
-  // Convert 10:00 - 11:30 Kyiv time on Tuesday to UTC
   const slot1Start = fromZonedTime(setMinutes(setHours(tuesdayKyiv, 10), 0), KYIV_TZ);
   const slot1End = fromZonedTime(setMinutes(setHours(tuesdayKyiv, 11), 30), KYIV_TZ);
 
-  // Convert 14:00 - 15:00 Kyiv time on Wednesday to UTC
   const slot2Start = fromZonedTime(setMinutes(setHours(wednesdayKyiv, 14), 0), KYIV_TZ);
   const slot2End = fromZonedTime(setMinutes(setHours(wednesdayKyiv, 15), 0), KYIV_TZ);
 
-  // Clear demo bookings for clean seed
   await prisma.booking.deleteMany({
     where: {
       title: { in: ["Weekly Team Sync", "Project Sprint Planning"] },
@@ -90,7 +86,7 @@ async function main() {
       startTime: slot1Start,
       endTime: slot1End,
       status: "ACTIVE",
-      roomId: rooms[0].id, // Акваріум
+      roomId: rooms[0].id,
       userId: adminUser.id,
     },
   });
@@ -101,7 +97,7 @@ async function main() {
       startTime: slot2Start,
       endTime: slot2End,
       status: "ACTIVE",
-      roomId: rooms[1].id, // Марс
+      roomId: rooms[1].id,
       userId: testUser.id,
     },
   });
