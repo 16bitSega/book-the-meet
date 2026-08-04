@@ -13,6 +13,15 @@ const SLOT_DURATION_MINUTES = 30;
 const TOTAL_SLOTS = ((OFFICE_END_HOUR - OFFICE_START_HOUR) * 60) / SLOT_DURATION_MINUTES;
 const API_BASE = "https://full-spiders-battle.loca.lt";
 
+// Default Fallback Rooms if API loading is slow
+const DEFAULT_ROOMS: Room[] = [
+  { id: "room-1", name: "Акваріум", floor: 1, capacity: 6 },
+  { id: "room-2", name: "Марс", floor: 2, capacity: 10 },
+  { id: "room-3", name: "Гагарін", floor: 2, capacity: 4 },
+  { id: "room-4", name: "Венера", floor: 3, capacity: 8 },
+  { id: "room-5", name: "Юпітер", floor: 3, capacity: 15 },
+];
+
 // Types
 export interface Room {
   id: string;
@@ -42,19 +51,20 @@ export default function ScheduleGrid({
   onBookingClick,
   refetchKey = 0,
 }: ScheduleGridProps) {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
 
   // State
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<Room[]>(DEFAULT_ROOMS);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const nowKyiv = toZonedTime(new Date(), KYIV_TIMEZONE);
     return startOfWeek(nowKyiv, { weekStartsOn: 1 });
   });
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  const [selectedRoomId, setSelectedRoomId] = useState<string>(DEFAULT_ROOMS[0].id);
 
   // Fetch Rooms
   useEffect(() => {
@@ -65,9 +75,11 @@ export default function ScheduleGrid({
         });
         if (res.ok) {
           const data = await res.json();
-          setRooms(data);
-          if (data.length > 0 && !selectedRoomId) {
-            setSelectedRoomId(data[0].id);
+          if (Array.isArray(data) && data.length > 0) {
+            setRooms(data);
+            if (!selectedRoomId || !data.some((r: Room) => r.id === selectedRoomId)) {
+              setSelectedRoomId(data[0].id);
+            }
           }
         }
       } catch (err) {
@@ -82,6 +94,7 @@ export default function ScheduleGrid({
     if (!selectedRoomId) return;
 
     setIsLoading(true);
+    setApiError(null);
     try {
       const weekStartStr = format(currentWeekStart, "yyyy-MM-dd");
       const url = `${API_BASE}/api/bookings?roomId=${selectedRoomId}&weekStart=${weekStartStr}`;
@@ -93,9 +106,12 @@ export default function ScheduleGrid({
       if (res.ok) {
         const data = await res.json();
         setBookings(Array.isArray(data) ? data : data.bookings || []);
+      } else {
+        setApiError("Unable to load bookings for the selected week.");
       }
     } catch (err) {
       console.error("Failed to fetch bookings", err);
+      setApiError("Network connection error. Please verify LocalTunnel or server status.");
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +140,7 @@ export default function ScheduleGrid({
     setCurrentWeekStart(startOfWeek(nowKyiv, { weekStartsOn: 1 }));
   };
 
-  const currentRoom = rooms.find((r) => r.id === selectedRoomId);
+  const currentRoom = rooms.find((r) => r.id === selectedRoomId) || rooms[0];
 
   // Cell Logic
   const getBookingForCell = useCallback(
@@ -151,14 +167,6 @@ export default function ScheduleGrid({
     const m = minutes % 60;
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
   };
-
-  if (authLoading || !rooms.length) {
-    return (
-      <div className="w-full h-64 flex items-center justify-center bg-white rounded-xl border border-slate-200 shadow-xs">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -201,6 +209,18 @@ export default function ScheduleGrid({
         </div>
       </div>
 
+      {apiError && (
+        <div className="bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 border-b border-amber-200 flex justify-between items-center">
+          <span>⚠️ {apiError}</span>
+          <button
+            onClick={fetchBookings}
+            className="text-blue-600 underline font-semibold hover:text-blue-800"
+          >
+            Retry Loading
+          </button>
+        </div>
+      )}
+
       {/* Grid */}
       <div className="overflow-x-auto">
         <div className="min-w-[900px]">
@@ -227,15 +247,15 @@ export default function ScheduleGrid({
           {/* Body */}
           <div className="relative divide-y divide-slate-100">
             {isLoading ? (
-              <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center backdrop-blur-xs">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : null}
 
             {timeSlots.map((minutes) => (
               <div
                 key={minutes}
-                className="grid grid-cols-[60px_repeat(7,1fr)] hover:bg-slate-50/50 transition-colors"
+                className="grid grid-cols-[60px_repeat(7,1fr)] hover:bg-slate-50/30 transition-colors"
               >
                 {/* Time Label */}
                 <div className="p-2 text-xs text-slate-500 text-right pr-3 border-r border-slate-100 bg-slate-50/50 sticky left-0 font-mono">
