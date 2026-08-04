@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: "INVALID_INPUT",
-          message: "Invalid email or password format.",
+          message: "Please enter a valid email address and password.",
         },
         { status: 400 }
       );
@@ -25,15 +25,27 @@ export async function POST(req: Request) {
 
     const { email, password } = result.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+      });
+    } catch (dbError: any) {
+      console.error("Database Login Connection Error:", dbError);
+      return NextResponse.json(
+        {
+          error: "DATABASE_UNAVAILABLE",
+          message: "Database connection unavailable. Please ensure PostgreSQL is running (docker-compose up -d).",
+        },
+        { status: 503 }
+      );
+    }
 
     if (!user) {
       return NextResponse.json(
         {
           error: "INVALID_CREDENTIALS",
-          message: "Invalid email or password.",
+          message: "Invalid email or password. Please check your credentials or create a new account.",
         },
         { status: 401 }
       );
@@ -44,7 +56,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: "INVALID_CREDENTIALS",
-          message: "Invalid email or password.",
+          message: "Invalid email or password. Please check your credentials or create a new account.",
         },
         { status: 401 }
       );
@@ -64,11 +76,11 @@ export async function POST(req: Request) {
       createdAt: user.createdAt.toISOString(),
     });
   } catch (error) {
-    console.error("Login Error:", error);
+    console.error("Login Route Error:", error);
     return NextResponse.json(
       {
         error: "INTERNAL_SERVER_ERROR",
-        message: "An unexpected error occurred.",
+        message: "An unexpected error occurred during login.",
       },
       { status: 500 }
     );

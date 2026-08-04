@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginPage() {
   const router = useRouter();
   const { login, error: authError } = useAuth();
@@ -14,21 +16,32 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
+  const validateForm = () => {
+    const errors: { email?: string; password?: string } = {};
+
+    if (!email.trim()) {
+      errors.email = "Email address is required.";
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      errors.email = "Please enter a valid email address (e.g. user@office.com).";
+    }
+
+    if (!password) {
+      errors.password = "Password is required.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFieldErrors({});
 
-    const errors: { email?: string; password?: string } = {};
-    if (!email.trim()) errors.email = "Email is required.";
-    if (!password) errors.password = "Password is required.";
-
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
+    if (!validateForm()) {
       return;
     }
 
     setSubmitting(true);
-    const success = await login({ email, password });
+    const success = await login({ email: email.trim(), password });
     setSubmitting(false);
 
     if (success) {
@@ -50,7 +63,7 @@ export default function LoginPage() {
         </div>
 
         {authError && (
-          <div className="mt-6 rounded-lg bg-red-50 p-3 text-xs font-medium text-red-700 border border-red-200">
+          <div className="mt-6 rounded-lg bg-red-50 p-3.5 text-xs font-medium text-red-700 border border-red-200 leading-relaxed">
             {authError}
           </div>
         )}
@@ -63,12 +76,19 @@ export default function LoginPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }}
               placeholder="user@office.com"
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-lg border px-3.5 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.email
+                  ? "border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/20"
+                  : "border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              }`}
             />
             {fieldErrors.email && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+              <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.email}</p>
             )}
           </div>
 
@@ -79,12 +99,19 @@ export default function LoginPage() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+              }}
               placeholder="••••••••"
-              className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 block w-full rounded-lg border px-3.5 py-2 text-sm text-slate-900 shadow-sm focus:outline-none focus:ring-1 ${
+                fieldErrors.password
+                  ? "border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/20"
+                  : "border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              }`}
             />
             {fieldErrors.password && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+              <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.password}</p>
             )}
           </div>
 

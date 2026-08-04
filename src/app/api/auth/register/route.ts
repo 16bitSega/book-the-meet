@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: "INVALID_INPUT",
-          message: "Validation error",
+          message: "Validation error. Please check all fields.",
           details: result.error.flatten().fieldErrors,
         },
         { status: 400 }
@@ -27,16 +27,27 @@ export async function POST(req: Request) {
 
     const { email, name, password } = result.data;
 
-    // Check duplicate email
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    let existingUser;
+    try {
+      existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+    } catch (dbError: any) {
+      console.error("Database Registration Connection Error:", dbError);
+      return NextResponse.json(
+        {
+          error: "DATABASE_UNAVAILABLE",
+          message: "Database connection unavailable. Please ensure PostgreSQL is running (docker-compose up -d).",
+        },
+        { status: 503 }
+      );
+    }
 
     if (existingUser) {
       return NextResponse.json(
         {
           error: "EMAIL_EXISTS",
-          message: "A user with this email address already exists.",
+          message: "A user account with this email address already exists.",
         },
         { status: 409 }
       );
@@ -76,7 +87,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error: "INTERNAL_SERVER_ERROR",
-        message: "An unexpected error occurred.",
+        message: "An unexpected error occurred during registration.",
       },
       { status: 500 }
     );
