@@ -1,53 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-import { Booking } from "./ScheduleGrid";
-
-const KYIV_TIMEZONE = "Europe/Kyiv";
-const API_BASE = "https://full-spiders-battle.loca.lt";
+import React, { useState } from "react";
 
 interface CancelModalProps {
-  booking: Booking;
-  roomName: string;
+  bookingId: string;
+  hasRecurringSeries: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function CancelModal({
-  booking,
-  roomName,
-  onClose,
-  onSuccess,
-}: CancelModalProps) {
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+const API_BASE = "https://full-spiders-battle.loca.lt";
 
-  const startKyiv = toZonedTime(new Date(booking.startTime), KYIV_TIMEZONE);
-  const endKyiv = toZonedTime(new Date(booking.endTime), KYIV_TIMEZONE);
+type CancelMode = "single" | "series";
 
-  const isPast = new Date(booking.endTime).getTime() <= Date.now();
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !submitting) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, submitting]);
+export default function CancelModal({ bookingId, hasRecurringSeries, onClose, onSuccess }: CancelModalProps) {
+  const [mode, setMode] = useState<CancelMode>("single");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCancel = async () => {
-    if (isPast) {
-      setErrorMsg("Past bookings cannot be cancelled.");
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMsg(null);
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/bookings/${booking.id}?mode=single`, {
+      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}?mode=${mode}`, {
         method: "DELETE",
         headers: {
           "Bypass-Tunnel-Reminder": "true",
@@ -55,93 +31,76 @@ export function CancelModal({
         },
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setErrorMsg(data.message || "Failed to cancel booking.");
-        setSubmitting(false);
-        return;
-      }
+      if (!res.ok) throw new Error("Failed to cancel");
 
       onSuccess();
+      onClose();
     } catch {
-      setErrorMsg("An unexpected network error occurred.");
-      setSubmitting(false);
+      setError("Could not cancel booking. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="glass-card w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">Cancel Booking</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Room: {roomName}</p>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Cancel Booking</h3>
+        <p className="text-slate-500 text-sm mb-6">Are you sure you want to cancel this booking?</p>
+
+        {hasRecurringSeries && (
+          <div className="mb-6 space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelMode"
+                checked={mode === "single"}
+                onChange={() => setMode("single")}
+                className="mt-1 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <span className="block text-sm font-medium text-slate-800">This occurrence only</span>
+                <span className="block text-xs text-slate-500">Future bookings in this series will remain.</span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="cancelMode"
+                checked={mode === "series"}
+                onChange={() => setMode("series")}
+                className="mt-1 text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <span className="block text-sm font-medium text-slate-800">All future occurrences</span>
+                <span className="block text-xs text-slate-500">Cancels this and all remaining bookings in this series.</span>
+              </div>
+            </label>
           </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100">
+            {error}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
           <button
             onClick={onClose}
-            disabled={submitting}
-            className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
           >
-            ✕
+            Back
           </button>
-        </div>
-
-        <div className="mt-6 space-y-4">
-          {errorMsg && (
-            <div className="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-700 border border-red-200">
-              {errorMsg}
-            </div>
-          )}
-
-          <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Title:</span>
-              <span className="font-semibold text-slate-800">{booking.title || "Meeting"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Kyiv Time:</span>
-              <span className="font-semibold text-slate-800">
-                {format(startKyiv, "MMM dd, HH:mm")} - {format(endKyiv, "HH:mm")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Organizer:</span>
-              <span className="font-semibold text-slate-800">{booking.userName}</span>
-            </div>
-          </div>
-
-          {isPast && (
-            <div className="rounded-lg bg-amber-50 p-3 border border-amber-200 text-xs text-amber-800">
-              ⚠️ This booking has already ended and cannot be cancelled.
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
-            <button
-              onClick={onClose}
-              disabled={submitting}
-              className="rounded-lg bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
-            >
-              Back
-            </button>
-            {!isPast && (
-              <button
-                onClick={handleCancel}
-                disabled={submitting}
-                className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow-md hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {submitting && (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                )}
-                Cancel Reservation
-              </button>
-            )}
-          </div>
+          <button
+            onClick={handleCancel}
+            disabled={isSubmitting}
+            className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+            Yes, Cancel
+          </button>
         </div>
       </div>
     </div>

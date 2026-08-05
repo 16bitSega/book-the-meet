@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { useAuth } from "@/context/AuthContext";
-import { CancelModal } from "@/components/CancelModal";
+import CancelModal from "@/components/CancelModal";
 import { EmailVerificationBarrier } from "@/components/EmailVerificationBarrier";
-import { Booking } from "@/components/ScheduleGrid";
 
 const KYIV_TIMEZONE = "Europe/Kyiv";
 const API_BASE = "https://full-spiders-battle.loca.lt";
@@ -23,6 +22,7 @@ interface MyBookingItem {
   roomName: string;
   userId: string;
   userName: string;
+  recurringSeriesId?: string | null;
 }
 
 export default function MyBookingsPage() {
@@ -36,8 +36,8 @@ export default function MyBookingsPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [cancelTarget, setCancelTarget] = useState<{
-    booking: Booking;
-    roomName: string;
+    bookingId: string;
+    hasSeries: boolean;
   } | null>(null);
 
   const fetchMyBookings = useCallback(async () => {
@@ -77,16 +77,8 @@ export default function MyBookingsPage() {
 
   const handleCancelClick = (b: MyBookingItem) => {
     setCancelTarget({
-      booking: {
-        id: b.id,
-        title: b.title,
-        startTime: b.startTime,
-        endTime: b.endTime,
-        userId: b.userId,
-        userName: b.userName,
-        roomId: b.roomId,
-      },
-      roomName: b.roomName,
+      bookingId: b.id,
+      hasSeries: !!b.recurringSeriesId,
     });
   };
 
@@ -286,8 +278,8 @@ export default function MyBookingsPage() {
       {/* Cancel Modal */}
       {cancelTarget && (
         <CancelModal
-          booking={cancelTarget.booking}
-          roomName={cancelTarget.roomName}
+          bookingId={cancelTarget.bookingId}
+          hasRecurringSeries={cancelTarget.hasSeries}
           onClose={() => setCancelTarget(null)}
           onSuccess={handleCancelSuccess}
         />

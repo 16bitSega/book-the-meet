@@ -1,83 +1,50 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { format, addMinutes } from "date-fns";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { EmailVerificationBarrier } from "./EmailVerificationBarrier";
-
-const KYIV_TIMEZONE = "Europe/Kyiv";
-const API_BASE = "https://full-spiders-battle.loca.lt";
+import { formatInTimeZone } from "date-fns-tz";
+import { addMinutes } from "date-fns";
 
 interface BookingModalProps {
-  slotTimeIso: string;
+  startTimeIso: string;
   roomId: string;
-  roomName: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const DURATION_OPTIONS = [
-  { label: "30 minutes", minutes: 30 },
-  { label: "1 hour", minutes: 60 },
-  { label: "1.5 hours", minutes: 90 },
-  { label: "2 hours", minutes: 120 },
-  { label: "2.5 hours", minutes: 150 },
-  { label: "3 hours", minutes: 180 },
-  { label: "3.5 hours", minutes: 210 },
-  { label: "4 hours", minutes: 240 },
-];
+const API_BASE = "https://full-spiders-battle.loca.lt";
 
-export function BookingModal({
-  slotTimeIso,
-  roomId,
-  roomName,
-  onClose,
-  onSuccess,
-}: BookingModalProps) {
+export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess }: BookingModalProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState("Team Sync");
-  const [durationMinutes, setDurationMinutes] = useState(30);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [duration, setDuration] = useState(30);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceCount, setRecurrenceCount] = useState(2);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculate start and end time in Kyiv time for preview
-  const startDate = new Date(slotTimeIso);
-  const startKyiv = toZonedTime(startDate, KYIV_TIMEZONE);
-  const endDate = addMinutes(startDate, durationMinutes);
-  const endKyiv = toZonedTime(endDate, KYIV_TIMEZONE);
-
-  // Escape key handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !submitting) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, submitting]);
+  if (!user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-
-    if (!title.trim()) {
-      setErrorMsg("Meeting title is required.");
-      return;
-    }
-
-    if (!user?.isEmailVerified) {
-      setErrorMsg("Email verification is required before creating bookings.");
-      return;
-    }
-
-    setSubmitting(true);
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      const endTimeIso = formatInTimeZone(
-        addMinutes(new Date(slotTimeIso), durationMinutes),
-        KYIV_TIMEZONE,
-        "yyyy-MM-dd'T'HH:mm:ssXXX"
-      );
+      const start = new Date(startTimeIso);
+      const end = addMinutes(start, duration);
+
+      const payload: any = {
+        roomId,
+        title,
+        startTime: formatInTimeZone(start, "Europe/Kyiv", "yyyy-MM-dd'T'HH:mm:ssXXX"),
+        endTime: formatInTimeZone(end, "Europe/Kyiv", "yyyy-MM-dd'T'HH:mm:ssXXX"),
+        isRecurring,
+      };
+
+      if (isRecurring) {
+        payload.recurrenceCount = recurrenceCount;
+      }
 
       const res = await fetch(`${API_BASE}/api/bookings`, {
         method: "POST",
@@ -86,144 +53,113 @@ export function BookingModal({
           "Bypass-Tunnel-Reminder": "true",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body: JSON.stringify({
-          roomId,
-          title: title.trim(),
-          startTime: slotTimeIso,
-          endTime: endTimeIso,
-          isRecurring: false,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 409) {
-          setErrorMsg("The selected time slot is already booked for this room.");
-        } else {
-          setErrorMsg(data.message || "Failed to create booking.");
-        }
-        setSubmitting(false);
+      if (res.status === 409) {
+        setError("Slot unavailable. Please choose another time.");
+        setIsSubmitting(false);
         return;
       }
 
-      // Success
+      if (!res.ok) throw new Error("Failed to create booking");
+
       onSuccess();
+      onClose();
     } catch {
-      setErrorMsg("An unexpected network error occurred.");
-      setSubmitting(false);
+      setError("An error occurred. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="glass-card w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">Create Reservation</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Room: {roomName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 transition-colors"
-          >
-            ✕
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Book Meeting Room</h3>
 
-        {!user?.isEmailVerified ? (
-          <div className="mt-6 space-y-4">
-            <EmailVerificationBarrier />
-            <div className="flex justify-end">
-              <button
-                onClick={onClose}
-                className="rounded-lg bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="e.g., Project Sync"
+            />
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {errorMsg && (
-              <div className="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-700 border border-red-200">
-                {errorMsg}
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Duration (minutes)</label>
+            <select
+              value={duration}
+              onChange={(e) => setDuration(Number(e.target.value))}
+              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+            >
+              <option value={30}>30 mins</option>
+              <option value={60}>1 hour</option>
+              <option value={90}>1.5 hours</option>
+              <option value={120}>2 hours</option>
+              <option value={150}>2.5 hours</option>
+              <option value={180}>3 hours</option>
+              <option value={210}>3.5 hours</option>
+              <option value={240}>4 hours</option>
+            </select>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+                className="rounded text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-slate-700">Repeat Weekly</span>
+            </label>
+
+            {isRecurring && (
+              <div className="mt-3 pl-6 animate-in slide-in-from-top-2">
+                <label className="block text-xs font-medium text-slate-500 mb-1">Number of weeks</label>
+                <input
+                  type="number"
+                  min={2}
+                  max={12}
+                  value={recurrenceCount}
+                  onChange={(e) => setRecurrenceCount(Number(e.target.value))}
+                  className="w-24 border border-slate-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <p className="text-xs text-slate-400 mt-1">Total bookings: {recurrenceCount}</p>
               </div>
             )}
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                Meeting Title
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Weekly Sprint Sync"
-                className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                autoFocus
-              />
+          {error && (
+            <div className="p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100">
+              {error}
             </div>
+          )}
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-                Duration
-              </label>
-              <select
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="mt-1 block w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-              >
-                {DURATION_OPTIONS.map((opt) => (
-                  <option key={opt.minutes} value={opt.minutes}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Kyiv Start Time:</span>
-                <span className="font-semibold text-slate-800">
-                  {format(startKyiv, "EEEE, MMM dd 'at' HH:mm")}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Kyiv End Time:</span>
-                <span className="font-semibold text-slate-800">
-                  {format(endKyiv, "EEEE, MMM dd 'at' HH:mm")}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={submitting}
-                className="rounded-lg bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-lg bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {submitting && (
-                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                )}
-                Confirm Reservation
-              </button>
-            </div>
-          </form>
-        )}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+              Confirm Booking
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,46 +1,86 @@
 "use client";
 
-import React, { useState } from "react";
-import ScheduleGrid, { Booking } from "@/components/ScheduleGrid";
-import { BookingModal } from "@/components/BookingModal";
-import { CancelModal } from "@/components/CancelModal";
+import React, { useState, useEffect, useCallback } from "react";
+import ScheduleGrid from "@/components/ScheduleGrid";
+import BookingModal from "@/components/BookingModal";
+import CancelModal from "@/components/CancelModal";
 import { EmailVerificationBarrier } from "@/components/EmailVerificationBarrier";
+import { NotificationToast } from "@/components/NotificationToast";
+import { GridSkeleton } from "@/components/Skeletons";
+import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+
+// Types
+interface Booking {
+  id: string;
+  startTime: string;
+  endTime: string;
+  userId: string;
+  userName: string;
+  roomId: string;
+  title: string;
+  recurringSeriesId?: string | null;
+}
+
+const API_BASE = "https://full-spiders-battle.loca.lt";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [pendingSlot, setPendingSlot] = useState<{
-    timeIso: string;
-    roomId: string;
-    roomName: string;
-  } | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const [pendingCancelBooking, setPendingCancelBooking] = useState<{
-    booking: Booking;
-    roomName: string;
-  } | null>(null);
+  const [pendingSlot, setPendingSlot] = useState<{ time: string; roomId: string } | null>(null);
+  const [cancellingBooking, setCancellingBooking] = useState<{ id: string; hasSeries: boolean } | null>(null);
 
-  const [refetchKey, setRefetchKey] = useState<number>(0);
+  // Fetch My Bookings for notification system and grid sync
+  const fetchBookings = useCallback(async () => {
+    setIsLoading(true);
+    setApiError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/bookings/my?tab=upcoming&limit=50`, {
+        headers: {
+          "Bypass-Tunnel-Reminder": "true",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBookings(data.bookings || []);
+      } else {
+        setApiError("Failed to load your bookings");
+      }
+    } catch {
+      setApiError("Network error. Please check connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const handleSlotClick = (timeIso: string, roomId: string, roomName: string) => {
+  useEffect(() => {
+    if (user) fetchBookings();
+    else setIsLoading(false);
+  }, [user, fetchBookings]);
+
+  const handleSlotClick = (timeIso: string, roomId: string) => {
     if (!user) {
       router.push("/login");
       return;
     }
-    setPendingSlot({ timeIso, roomId, roomName });
+    setPendingSlot({ time: timeIso, roomId });
   };
 
-  const handleBookingClick = (booking: Booking, roomName: string) => {
-    setPendingCancelBooking({ booking, roomName });
+  const handleCancelClick = (id: string, hasSeries: boolean) => {
+    setCancellingBooking({ id, hasSeries });
   };
 
-  const handleOperationSuccess = () => {
+  const handleRefresh = () => {
+    fetchBookings();
     setPendingSlot(null);
-    setPendingCancelBooking(null);
-    setRefetchKey((prev) => prev + 1); // Trigger automatic grid refetch
+    setCancellingBooking(null);
   };
 
   if (authLoading) {
@@ -53,7 +93,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="max-w-[1600px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200">
           <div>
@@ -62,11 +102,10 @@ export default function Home() {
               Real-time booking for Kyiv Office (Europe/Kyiv)
             </p>
           </div>
-
           {user && (
             <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-xs border border-slate-200">
               <div
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2.5 h-2.5 rounded-full ${
                   user.isEmailVerified ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
                 }`}
               ></div>
@@ -75,41 +114,58 @@ export default function Home() {
           )}
         </div>
 
-        {/* Global Warning Banner for Unverified Users */}
-        {user && !user.isEmailVerified && (
-          <div className="mb-4">
-            <EmailVerificationBarrier />
-          </div>
+        {/* Content Area */}
+        {apiError ? (
+          <EmptyState
+            title="Unable to Load Schedule"
+            message={apiError}
+            action={
+              <button
+                onClick={() => fetchBookings()}
+                className="px-4 py-2 bg-blue-600 text-white font-medium text-xs rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+              >
+                Retry
+              </button>
+            }
+          />
+        ) : isLoading ? (
+          <GridSkeleton />
+        ) : (
+          <ScheduleGrid
+            onSlotClick={handleSlotClick}
+            onCancelClick={handleCancelClick}
+            myBookings={bookings}
+          />
         )}
-
-        {/* Schedule Grid Component */}
-        <ScheduleGrid
-          onSlotClick={handleSlotClick}
-          onBookingClick={handleBookingClick}
-          refetchKey={refetchKey}
-        />
       </div>
 
-      {/* Booking Creation Modal */}
+      {/* Modals & Overlays */}
+      {user && !user.isEmailVerified && (
+        <div className="fixed bottom-6 left-6 z-40 max-w-md">
+          <EmailVerificationBarrier />
+        </div>
+      )}
+
       {pendingSlot && (
         <BookingModal
-          slotTimeIso={pendingSlot.timeIso}
+          startTimeIso={pendingSlot.time}
           roomId={pendingSlot.roomId}
-          roomName={pendingSlot.roomName}
           onClose={() => setPendingSlot(null)}
-          onSuccess={handleOperationSuccess}
+          onSuccess={handleRefresh}
         />
       )}
 
-      {/* Booking Cancellation Modal */}
-      {pendingCancelBooking && (
+      {cancellingBooking && (
         <CancelModal
-          booking={pendingCancelBooking.booking}
-          roomName={pendingCancelBooking.roomName}
-          onClose={() => setPendingCancelBooking(null)}
-          onSuccess={handleOperationSuccess}
+          bookingId={cancellingBooking.id}
+          hasRecurringSeries={cancellingBooking.hasSeries}
+          onClose={() => setCancellingBooking(null)}
+          onSuccess={handleRefresh}
         />
       )}
+
+      {/* Notifications */}
+      {user && <NotificationToast bookings={bookings} />}
     </main>
   );
 }
