@@ -1,26 +1,82 @@
-@tailwindcss base;
-@tailwindcss components;
-@tailwindcss utilities;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
+  /* Jungle Teal Palette */
+  --color-jungle-teal: #6b9080;
+  --color-muted-teal: #a4c3b2;
+  --color-frozen-water: #cce3de;
+  --color-azure-mist: #eaf4f4;
+  --color-mint-cream: #f6fff8;
+
+  /* Semantic Mappings */
+  --background: var(--color-mint-cream);
+  --foreground: #1f2937; /* Dark gray for text readability against light teal */
+  --primary: var(--color-jungle-teal);
+  --primary-hover: #567569; /* Slightly darker for hover states */
+  --secondary: var(--color-muted-teal);
+  --surface: #ffffff;
+  --surface-alt: var(--color-azure-mist);
+  --border: var(--color-frozen-water);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  min-height: 100vh;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+/* Custom Utilities */
+@layer components {
+  .btn-primary {
+    @apply bg-[#6b9080] text-white px-4 py-2 rounded-md font-medium transition-all duration-200 hover:bg-[#567569] focus:ring-2 focus:ring-[#6b9080] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-[#eaf4f4] text-[#6b9080] px-4 py-2 rounded-md font-medium transition-all duration-200 hover:bg-[#cce3de] border border-[#cce3de];
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-md border border-[#cce3de] bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6b9080] focus:border-transparent transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-xs border border-[#cce3de] overflow-hidden;
+  }
+
+  .badge-success {
+    @apply bg-[#f6fff8] text-[#6b9080] border border-[#a4c3b2] px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .badge-info {
+    @apply bg-[#eaf4f4] text-[#6b9080] border border-[#cce3de] px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar for Grid */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-azure-mist);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted-teal);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-jungle-teal);
 }

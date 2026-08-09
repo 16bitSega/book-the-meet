@@ -85,31 +85,36 @@ export default function Home() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-mint-cream)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--color-frozen-water)] border-t-[var(--color-jungle-teal)]"></div>
+          <p className="text-[var(--color-jungle-teal)] font-medium animate-pulse">Loading Schedule...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-6 lg:p-8">
+    <main className="min-h-screen bg-[var(--color-mint-cream)] p-4 md:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 bg-white rounded-2xl shadow-xs border border-[var(--color-frozen-water)]">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Office Schedule</h1>
-            <p className="text-slate-500 text-sm mt-1">
-              Real-time booking for Kyiv Office (Europe/Kyiv)
+            <h1 className="text-3xl font-bold text-[var(--color-jungle-teal)] tracking-tight">Office Schedule</h1>
+            <p className="text-gray-600 mt-1 text-sm leading-relaxed">
+              Reserve meeting spaces in our Kyiv office. All times are displayed in{" "}
+              <span className="font-semibold text-[var(--color-jungle-teal)]">Kyiv Time (Europe/Kyiv)</span>.
             </p>
           </div>
           {user && (
-            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-xs border border-slate-200">
-              <div
-                className={`w-2.5 h-2.5 rounded-full ${
-                  user.isEmailVerified ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                }`}
-              ></div>
-              <span className="text-sm font-medium text-slate-700">{user.email}</span>
+            <div className="flex items-center gap-3 bg-[var(--color-azure-mist)] px-4 py-2.5 rounded-xl border border-[var(--color-frozen-water)] shadow-2xs">
+              <div className="w-8 h-8 rounded-full bg-[var(--color-jungle-teal)] flex items-center justify-center text-white font-bold text-sm">
+                {user.name?.charAt(0) || user.email.charAt(0)}
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Logged in as</p>
+                <p className="text-xs font-bold text-[var(--color-jungle-teal)]">{user.email}</p>
+              </div>
             </div>
           )}
         </div>
@@ -122,9 +127,9 @@ export default function Home() {
             action={
               <button
                 onClick={() => fetchBookings()}
-                className="px-4 py-2 bg-blue-600 text-white font-medium text-xs rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                className="btn-primary text-xs"
               >
-                Retry
+                Try Again
               </button>
             }
           />

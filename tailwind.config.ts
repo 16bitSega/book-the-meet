@@ -9,12 +9,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "jungle-teal": "#6b9080",
+        "muted-teal": "#a4c3b2",
+        "frozen-water": "#cce3de",
+        "azure-mist": "#eaf4f4",
+        "mint-cream": "#f6fff8",
         brand: {
-          50: "#f0f7ff",
-          100: "#e0effe",
-          500: "#2563eb",
-          600: "#1d4ed8",
-          700: "#1e40af",
+          50: "#f6fff8",
+          100: "#eaf4f4",
+          200: "#cce3de",
+          300: "#a4c3b2",
+          500: "#6b9080",
+          600: "#567569",
+          700: "#435c52",
         },
       },
     },

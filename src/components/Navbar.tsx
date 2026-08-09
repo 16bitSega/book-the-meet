@@ -2,17 +2,19 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
-  const { user, logout, resendVerification } = useAuth();
+  const { user, logout, resendVerification, loading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [resendStatus, setResendStatus] = useState<string | null>(null);
 
   const handleResend = async () => {
     setResendStatus("Sending...");
     const success = await resendVerification();
     if (success) {
-      setResendStatus("Verification link sent! Check server console.");
+      setResendStatus("Verification link sent! Check terminal console.");
       setTimeout(() => setResendStatus(null), 5000);
     } else {
       setResendStatus("Failed to send.");
@@ -20,94 +22,119 @@ export function Navbar() {
     }
   };
 
+  if (authLoading) return null;
+
   return (
-    <nav className="glass-card sticky top-0 z-40 w-full shadow-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        {/* Brand Logo */}
-        <div className="flex items-center space-x-6">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-xl font-bold tracking-tight text-transparent">
-              BookMeet
-            </span>
-          </Link>
-
-          {user && (
-            <div className="hidden space-x-4 md:flex">
-              <Link
-                href="/"
-                className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-              >
-                Schedule Grid
-              </Link>
-              <Link
-                href="/my-bookings"
-                className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-              >
-                My Bookings
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* User Info & Actions */}
-        <div className="flex items-center space-x-4">
-          {user ? (
-            <div className="flex items-center space-x-3 text-sm">
-              <span className="hidden font-medium text-slate-800 sm:inline">
-                {user.name}
+    <nav className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-[var(--color-frozen-water)] shadow-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          {/* Logo & Main Nav */}
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-9 h-9 rounded-xl bg-[var(--color-jungle-teal)] flex items-center justify-center text-white font-bold text-lg shadow-xs group-hover:bg-[#567569] transition-colors">
+                B
+              </div>
+              <span className="font-bold text-xl text-[var(--color-jungle-teal)] tracking-tight">
+                BookTheMeet
               </span>
+            </Link>
 
-              {/* Email Verification Status Badge */}
-              {user.isEmailVerified ? (
-                <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                  Verified
-                </span>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
-                    Unverified
+            {user && (
+              <div className="hidden md:flex items-center gap-4 border-l border-[var(--color-frozen-water)] pl-6">
+                <Link
+                  href="/"
+                  className={`text-sm font-semibold transition-colors ${
+                    pathname === "/"
+                      ? "text-[var(--color-jungle-teal)] underline underline-offset-4"
+                      : "text-gray-600 hover:text-[var(--color-jungle-teal)]"
+                  }`}
+                >
+                  Schedule Grid
+                </Link>
+                <Link
+                  href="/my-bookings"
+                  className={`text-sm font-semibold transition-colors ${
+                    pathname === "/my-bookings"
+                      ? "text-[var(--color-jungle-teal)] underline underline-offset-4"
+                      : "text-gray-600 hover:text-[var(--color-jungle-teal)]"
+                  }`}
+                >
+                  My Bookings
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* User Actions */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-3">
+                {/* Email Verification Status */}
+                {user.isEmailVerified ? (
+                  <span className="badge-success hidden sm:inline-flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-jungle-teal)]"></span>
+                    Verified
                   </span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200">
+                      Unverified
+                    </span>
+                    <button
+                      onClick={handleResend}
+                      className="text-xs text-[var(--color-jungle-teal)] font-semibold underline hover:text-[#567569]"
+                    >
+                      Resend link
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 pl-3 border-l border-[var(--color-frozen-water)]">
+                  <div className="hidden md:block text-right">
+                    <p className="text-sm font-bold text-gray-900 leading-tight">{user.name || user.email}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+
                   <button
-                    onClick={handleResend}
-                    className="text-xs text-blue-600 underline hover:text-blue-800"
+                    onClick={logout}
+                    className="btn-secondary text-xs py-1.5 px-3"
                   >
-                    Resend link
+                    Logout
                   </button>
                 </div>
-              )}
-
-              <button
-                onClick={logout}
-                className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200 transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-3">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-blue-700 shadow-sm transition-colors"
-              >
-                Register
-              </Link>
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/login"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname === "/login"
+                      ? "text-[var(--color-jungle-teal)] font-bold"
+                      : "text-gray-600 hover:text-[var(--color-jungle-teal)]"
+                  }`}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="btn-primary text-sm shadow-md shadow-[var(--color-jungle-teal)]/20"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Resend Status Toast Banner */}
+      {/* Resend Toast Banner */}
       {resendStatus && (
-        <div className="bg-blue-600 px-4 py-1.5 text-center text-xs font-medium text-white">
+        <div className="bg-[var(--color-jungle-teal)] px-4 py-1.5 text-center text-xs font-medium text-white">
           {resendStatus}
         </div>
       )}
     </nav>
   );
 }
+
+export default Navbar;
