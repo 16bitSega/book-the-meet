@@ -9,8 +9,10 @@ BookMeet is a modern, high-performance web application for reserving office meet
 * **Strict Race Protection:** Powered by PostgreSQL 16 partial `GiST` exclusion constraints (`tstzrange` with `WHERE status = 'ACTIVE'`). Prevents overlapping bookings even under 50+ concurrent requests.
 * **DST-Aware Kyiv Timezone Engine:** Built with `date-fns-tz` handling Europe/Kyiv daylight saving time shifts (March 29 & October 25 transitions) without wall-clock drift.
 * **Authentication & Verification Barrier:** JWT HttpOnly cookies with `tokenVersion` session revocation, bcrypt password hashing, and high-entropy SHA-256 email verification tokens.
-* **Custom Pure CSS Grid Calendar:** 30-minute vertical time axis (09:00 to 19:00 Kyiv office hours), 7-day horizontal axis, room selector, and user local timezone conversion badge.
-* **Recurring Bookings & Series Cancellation:** Schedule weekly recurring meetings (2 to 12 weeks) with support for cancelling single instances or entire future series.
+* **Custom Pure CSS Grid Calendar:** 30-minute vertical time axis (09:00 to 19:00 Kyiv office hours), 7-day horizontal axis, room selector, sticky days header row, and user local timezone conversion.
+* **Flexible Recurring Bookings:** Schedule recurring meetings with multiple frequencies (**Daily**, **Weekly**, **Bi-weekly**, and **Monthly**) up to 12 repetitions, with support for cancelling single instances or entire future series.
+* **Golden Ratio Mobile Experience:** Mobile side drawer navigation designed according to the Golden Ratio ($61.8\text{vw}$ menu, $38.2\text{vw}$ tap-outside backdrop), with custom Jungle Teal dropdowns (`CustomSelect`).
+* **Deep-Link Grid Navigation:** Direct navigation from *"My Bookings"* cards (`View in Grid →`) landing precisely on the corresponding room and week date.
 * **In-App Notification Alerts:** Toast notifications alerting users 10 minutes prior to booking start/end times with `localStorage` deduplication.
 
 ---
@@ -69,7 +71,7 @@ npm run test:concurrency
 
 ## 🏗 Architectural Summary
 
-* **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS
+* **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS (Jungle Teal Theme)
 * **Backend:** Next.js Route Handlers with 6-stage pipeline (IP Rate Limiting -> Auth & CSRF -> User Rate Limiting -> Zod DTO Validation -> Business Rules -> DB Execution)
 * **Database:** PostgreSQL 16 with `citext` and `btree_gist` extensions
 * **ORM:** Prisma 7 with `@prisma/adapter-pg` driver adapter
