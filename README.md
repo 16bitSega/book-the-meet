@@ -80,4 +80,4 @@ npm run test:concurrency
 ---
 
 ## 📜 License
-MIT License. Developed for BookMeet Office Scheduling.
+MIT License. Developed for UA-SKILLS tournament: [BookMeet Office Scheduling.](https://ua-skills.com/tournaments)
