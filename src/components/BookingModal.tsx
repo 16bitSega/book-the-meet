@@ -96,7 +96,7 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--color-frozen-water)]">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6 border border-[var(--color-frozen-water)]">
         <h3 className="text-xl font-bold text-[var(--color-jungle-teal)] mb-4">Select Your Meeting Time</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,20 +114,27 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Duration (minutes)</label>
-            <select
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              className="input-field bg-white"
-            >
-              <option value={30}>30 mins</option>
-              <option value={60}>1 hour</option>
-              <option value={90}>1.5 hours</option>
-              <option value={120}>2 hours</option>
-              <option value={150}>2.5 hours</option>
-              <option value={180}>3 hours</option>
-              <option value={210}>3.5 hours</option>
-              <option value={240}>4 hours</option>
-            </select>
+            <div className="relative w-full">
+              <select
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+                className="w-full appearance-none bg-white border border-[var(--color-frozen-water)] text-gray-800 text-sm font-semibold py-2.5 pl-3.5 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-jungle-teal)] cursor-pointer truncate shadow-2xs"
+              >
+                <option value={30}>30 mins</option>
+                <option value={60}>1 hour</option>
+                <option value={90}>1.5 hours</option>
+                <option value={120}>2 hours</option>
+                <option value={150}>2.5 hours</option>
+                <option value={180}>3 hours</option>
+                <option value={210}>3.5 hours</option>
+                <option value={240}>4 hours</option>
+              </select>
+              <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-[var(--color-jungle-teal)]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </div>
           </div>
 
           <div className="pt-2 border-t border-[var(--color-frozen-water)]">

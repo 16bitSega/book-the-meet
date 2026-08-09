@@ -162,7 +162,7 @@ export default function MyBookingsPage() {
             </div>
           </div>
         ) : bookings.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-[var(--color-frozen-water)] shadow-xs">
+          <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-[var(--color-frozen-water)] shadow-xs">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-azure-mist)] text-[var(--color-jungle-teal)]">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -191,6 +191,7 @@ export default function MyBookingsPage() {
               const startKyiv = toZonedTime(new Date(b.startTime), KYIV_TIMEZONE);
               const endKyiv = toZonedTime(new Date(b.endTime), KYIV_TIMEZONE);
               const isCancelled = b.status === "CANCELLED";
+              const targetWeekStart = format(startKyiv, "yyyy-MM-dd");
 
               return (
                 <div
@@ -241,7 +242,7 @@ export default function MyBookingsPage() {
                     )}
 
                     <Link
-                      href="/"
+                      href={`/?roomId=${b.roomId}&weekStart=${targetWeekStart}`}
                       className="btn-secondary text-xs"
                     >
                       View in Grid →

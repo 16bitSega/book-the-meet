@@ -53,6 +53,8 @@ export default function ScheduleGrid({
   const [bookings, setBookings] = useState<Booking[]>(initialBookings || []);
   const [isLoading, setIsLoading] = useState(!initialRooms || initialRooms.length === 0);
 
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
@@ -72,20 +74,51 @@ export default function ScheduleGrid({
     return startOfWeek(nowKyiv, { weekStartsOn: 1 });
   });
 
-  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  // Sync state with URL params (e.g. from My Bookings "View in Grid" link)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramRoomId = urlParams.get("roomId");
+      const paramWeek = urlParams.get("weekStart");
 
-  // Persist current week in URL & localStorage
+      if (paramRoomId && rooms.some((r) => r.id === paramRoomId)) {
+        setSelectedRoomId(paramRoomId);
+      }
+
+      if (paramWeek) {
+        try {
+          const parsed = parseISO(paramWeek);
+          if (!isNaN(parsed.getTime())) {
+            setCurrentWeekStart(startOfWeek(toZonedTime(parsed, KYIV_TIMEZONE), { weekStartsOn: 1 }));
+          }
+        } catch {}
+      }
+    }
+  }, [rooms]);
+
+  // Persist current week & room in URL & localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       const formatted = format(currentWeekStart, "yyyy-MM-dd");
       localStorage.setItem("bookmeet_week_start", formatted);
       const url = new URL(window.location.href);
+      let changed = false;
+
       if (url.searchParams.get("weekStart") !== formatted) {
         url.searchParams.set("weekStart", formatted);
+        changed = true;
+      }
+
+      if (selectedRoomId && url.searchParams.get("roomId") !== selectedRoomId) {
+        url.searchParams.set("roomId", selectedRoomId);
+        changed = true;
+      }
+
+      if (changed) {
         window.history.replaceState(null, "", url.toString());
       }
     }
-  }, [currentWeekStart]);
+  }, [currentWeekStart, selectedRoomId]);
 
   // Sync initial props if provided
   useEffect(() => {
@@ -190,43 +223,49 @@ export default function ScheduleGrid({
   if (!rooms.length) return null;
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-sm border border-[var(--color-frozen-water)] overflow-hidden">
+    <div className="w-full max-w-full bg-white rounded-2xl shadow-xs border border-[var(--color-frozen-water)] overflow-hidden">
       {/* Controls Header */}
-      <div className="p-5 border-b border-[var(--color-frozen-water)] bg-white flex flex-col lg:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handlePrevWeek}
-            className="p-2 hover:bg-[var(--color-azure-mist)] rounded-full text-[var(--color-jungle-teal)] transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-          </button>
-          <span className="font-bold text-lg text-gray-800 min-w-[160px] text-center">
-            {format(currentWeekStart, "MMMM dd, yyyy")}
-          </span>
-          <button
-            onClick={handleNextWeek}
-            className="p-2 hover:bg-[var(--color-azure-mist)] rounded-full text-[var(--color-jungle-teal)] transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
+      <div className="p-4 sm:p-5 border-b border-[var(--color-frozen-water)] bg-white flex flex-col lg:flex-row justify-between items-center gap-4">
+        {/* Week Navigator */}
+        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrevWeek}
+              className="p-2 hover:bg-[var(--color-azure-mist)] rounded-full text-[var(--color-jungle-teal)] transition-colors shrink-0"
+              title="Previous Week"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
+            </button>
+            <span className="font-bold text-base sm:text-lg text-gray-800 min-w-[140px] text-center">
+              {format(currentWeekStart, "MMMM dd, yyyy")}
+            </span>
+            <button
+              onClick={handleNextWeek}
+              className="p-2 hover:bg-[var(--color-azure-mist)] rounded-full text-[var(--color-jungle-teal)] transition-colors shrink-0"
+              title="Next Week"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
+          </div>
           <button
             onClick={handleToday}
-            className="ml-2 px-4 py-2 text-sm font-medium bg-[var(--color-azure-mist)] text-[var(--color-jungle-teal)] rounded-lg hover:bg-[var(--color-frozen-water)] transition-colors border border-[var(--color-frozen-water)]"
+            className="px-3.5 py-1.5 text-xs font-semibold bg-[var(--color-azure-mist)] text-[var(--color-jungle-teal)] rounded-lg hover:bg-[var(--color-frozen-water)] transition-colors border border-[var(--color-frozen-water)] shrink-0"
           >
             Today
           </button>
         </div>
 
-        <div className="flex items-center gap-4 w-full lg:w-auto">
-          <div className="relative flex-1 lg:flex-none">
+        {/* Room Selector & Timezone Badge */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div className="relative w-full lg:w-72">
             <select
               value={selectedRoomId}
               onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full lg:w-64 appearance-none bg-white border border-[var(--color-frozen-water)] text-gray-700 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-jungle-teal)] focus:border-transparent font-medium cursor-pointer"
+              className="w-full appearance-none bg-white border border-[var(--color-frozen-water)] text-gray-800 text-sm font-semibold py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-jungle-teal)] cursor-pointer truncate shadow-2xs"
             >
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -234,44 +273,60 @@ export default function ScheduleGrid({
                 </option>
               ))}
             </select>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
+            <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-[var(--color-jungle-teal)]">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 bg-[var(--color-mint-cream)] px-3 py-2 rounded-lg border border-[var(--color-frozen-water)]">
+          <div className="hidden sm:flex items-center gap-2 bg-[var(--color-mint-cream)] px-3 py-2 rounded-lg border border-[var(--color-frozen-water)] shrink-0">
             <div className="w-2 h-2 rounded-full bg-[var(--color-jungle-teal)] animate-pulse"></div>
             <span className="text-xs font-semibold text-[var(--color-jungle-teal)]">Kyiv Time</span>
           </div>
         </div>
       </div>
 
+      {/* Mobile-Responsive Empty State Banner */}
+      {!isLoading && bookings.length === 0 && (
+        <div className="p-4 sm:p-6 border-b border-[var(--color-frozen-water)] bg-[var(--color-mint-cream)]/50">
+          <EmptyState
+            title="No Bookings This Week"
+            message={`No scheduled meetings for ${rooms.find((r) => r.id === selectedRoomId)?.name || 'this room'}. Tap an open time slot below to reserve a slot.`}
+          />
+        </div>
+      )}
+
       {/* Grid Container */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[900px]">
+      <div className="overflow-x-auto relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-[var(--color-frozen-water)] border-t-[var(--color-jungle-teal)]"></div>
+          </div>
+        )}
+
+        <div className="min-w-[850px]">
           {/* Header Row */}
-          <div className="grid grid-cols-[70px_repeat(7,1fr)] border-b border-[var(--color-frozen-water)] bg-[var(--color-azure-mist)]/30">
-            <div className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-center">Time</div>
+          <div className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-[var(--color-frozen-water)] bg-[var(--color-azure-mist)]/30">
+            <div className="p-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Time</div>
             {weekDays.map((day, i) => {
               const isToday = isSameDay(toZonedTime(new Date(), KYIV_TIMEZONE), day);
               return (
                 <div
                   key={i}
-                  className={`p-4 text-center border-l border-[var(--color-frozen-water)]/60 ${
+                  className={`p-3 text-center border-l border-[var(--color-frozen-water)]/60 ${
                     isToday ? "bg-[var(--color-jungle-teal)]/10" : ""
                   }`}
                 >
                   <div
-                    className={`text-xs font-bold uppercase mb-1 ${
+                    className={`text-[11px] font-bold uppercase mb-0.5 ${
                       isToday ? "text-[var(--color-jungle-teal)]" : "text-gray-500"
                     }`}
                   >
                     {format(day, "EEE")}
                   </div>
                   <div
-                    className={`text-lg font-bold leading-none ${
+                    className={`text-base font-bold leading-none ${
                       isToday ? "text-[var(--color-jungle-teal)]" : "text-gray-800"
                     }`}
                   >
@@ -284,26 +339,13 @@ export default function ScheduleGrid({
 
           {/* Body Rows */}
           <div className="relative">
-            {isLoading ? (
-              <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-[var(--color-frozen-water)] border-t-[var(--color-jungle-teal)]"></div>
-              </div>
-            ) : bookings.length === 0 ? (
-              <div className="p-8">
-                <EmptyState
-                  title="No Bookings This Week"
-                  message={`Select a time slot below to book ${rooms.find((r) => r.id === selectedRoomId)?.name}.`}
-                />
-              </div>
-            ) : null}
-
             {timeSlots.map((minutes) => (
               <div
                 key={minutes}
-                className="grid grid-cols-[70px_repeat(7,1fr)] border-b border-gray-50 hover:bg-[var(--color-azure-mist)]/10 transition-colors group"
+                className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-gray-50 hover:bg-[var(--color-azure-mist)]/10 transition-colors group"
               >
                 {/* Time Label */}
-                <div className="p-3 text-xs font-medium text-gray-400 text-center border-r border-[var(--color-frozen-water)] bg-white sticky left-0 z-10 font-mono">
+                <div className="p-2.5 text-xs font-medium text-gray-400 text-center border-r border-[var(--color-frozen-water)] bg-white sticky left-0 z-10 font-mono">
                   {formatTimeLabel(minutes)}
                 </div>
 
@@ -317,23 +359,23 @@ export default function ScheduleGrid({
                   const isPast = slotStartKyiv.getTime() <= nowKyiv.getTime();
 
                   let cellContent = null;
-                  let cellClass = "border-l border-gray-50 p-1.5 relative transition-all duration-200 min-h-[48px]";
+                  let cellClass = "border-l border-gray-50 p-1 relative transition-all duration-200 min-h-[44px]";
 
                   if (booking) {
                     cellClass = isMyBooking
-                      ? "border-l border-white/50 p-1.5 relative bg-[var(--color-jungle-teal)]/10 cursor-pointer hover:bg-[var(--color-jungle-teal)]/20 min-h-[48px]"
-                      : "border-l border-white/50 p-1.5 relative bg-[var(--color-frozen-water)]/40 cursor-not-allowed min-h-[48px]";
+                      ? "border-l border-white/50 p-1 relative bg-[var(--color-jungle-teal)]/10 cursor-pointer hover:bg-[var(--color-jungle-teal)]/20 min-h-[44px]"
+                      : "border-l border-white/50 p-1 relative bg-[var(--color-frozen-water)]/40 cursor-not-allowed min-h-[44px]";
 
                     cellContent = (
                       <div
-                        className={`h-full w-full rounded-md text-xs p-2 flex flex-col justify-center shadow-xs border relative group/card ${
+                        className={`h-full w-full rounded-lg text-xs p-1.5 flex flex-col justify-center shadow-2xs border relative group/card ${
                           isMyBooking
-                            ? "bg-white/90 text-[var(--color-jungle-teal)] border-[var(--color-jungle-teal)]/30"
+                            ? "bg-white/95 text-[var(--color-jungle-teal)] border-[var(--color-jungle-teal)]/30"
                             : "bg-white/80 text-gray-500 border-gray-200"
                         }`}
                       >
                         <div className="flex justify-between items-start">
-                          <span className="font-bold truncate leading-tight pr-3">
+                          <span className="font-bold truncate leading-tight pr-2">
                             {booking.title || (isMyBooking ? "My Meeting" : booking.userName.split(" ")[0])}
                           </span>
                           {isMyBooking && onCancelClick && (
@@ -357,7 +399,7 @@ export default function ScheduleGrid({
                       </div>
                     );
                   } else if (isPast) {
-                    cellClass = "border-l border-gray-50 p-1.5 relative bg-slate-50/40 cursor-not-allowed min-h-[48px] opacity-40";
+                    cellClass = "border-l border-gray-50 p-1 relative bg-slate-50/40 cursor-not-allowed min-h-[44px] opacity-40";
                     cellContent = (
                       <div
                         title="Past time slot cannot be booked"
