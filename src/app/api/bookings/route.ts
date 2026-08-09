@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { addWeeks, getHours, getMinutes } from "date-fns";
+import { addWeeks, addDays, getHours, getMinutes } from "date-fns";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { validateCsrf, checkRateLimit } from "@/lib/middleware";
@@ -15,6 +15,7 @@ const createBookingSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   isRecurring: z.boolean().optional(),
+  recurrenceFrequency: z.enum(["DAILY", "WEEKLY"]).optional().default("WEEKLY"),
   recurrenceCount: z.number().int().min(1).max(12).optional(),
 });
 
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { roomId, title, startTime: startTimeStr, endTime: endTimeStr, isRecurring, recurrenceCount } = result.data;
+  const { roomId, title, startTime: startTimeStr, endTime: endTimeStr, isRecurring, recurrenceFrequency, recurrenceCount } = result.data;
   const startTime = new Date(startTimeStr);
   const endTime = new Date(endTimeStr);
 
@@ -211,11 +212,11 @@ export async function POST(req: NextRequest) {
     const endM = getMinutes(endKyiv);
 
     for (let k = 0; k < effectiveCount; k++) {
-      // Step k weeks forward in Kyiv wall-clock time to handle DST shifts
-      const instanceStartKyiv = addWeeks(startKyiv, k);
+      // Step k days or weeks forward in Kyiv wall-clock time
+      const instanceStartKyiv = recurrenceFrequency === "DAILY" ? addDays(startKyiv, k) : addWeeks(startKyiv, k);
       instanceStartKyiv.setHours(startH, startM, 0, 0);
 
-      const instanceEndKyiv = addWeeks(endKyiv, k);
+      const instanceEndKyiv = recurrenceFrequency === "DAILY" ? addDays(endKyiv, k) : addWeeks(endKyiv, k);
       instanceEndKyiv.setHours(endH, endM, 0, 0);
 
       const instStartUtc = fromZonedTime(instanceStartKyiv, KYIV_TIMEZONE);

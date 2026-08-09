@@ -14,11 +14,14 @@ interface BookingModalProps {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
+type RecurrenceFrequency = "DAILY" | "WEEKLY";
+
 export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess }: BookingModalProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState("Team Sync");
   const [duration, setDuration] = useState(30);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState<RecurrenceFrequency>("WEEKLY");
   const [recurrenceCount, setRecurrenceCount] = useState(2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +46,7 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
       };
 
       if (isRecurring) {
+        payload.recurrenceFrequency = recurrenceFrequency;
         payload.recurrenceCount = recurrenceCount;
       }
 
@@ -74,28 +78,28 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Book Meeting Room</h3>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--color-frozen-water)]">
+        <h3 className="text-xl font-bold text-[var(--color-jungle-teal)] mb-4">Select Your Meeting Time</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Title</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="input-field"
               placeholder="e.g., Project Sync"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Duration (minutes)</label>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Duration (minutes)</label>
             <select
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              className="input-field bg-white"
             >
               <option value={30}>30 mins</option>
               <option value={60}>1 hour</option>
@@ -108,54 +112,88 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
             </select>
           </div>
 
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-2 border-t border-[var(--color-frozen-water)]">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isRecurring}
                 onChange={(e) => setIsRecurring(e.target.checked)}
-                className="rounded text-blue-600 focus:ring-blue-500"
+                className="rounded text-[var(--color-jungle-teal)] focus:ring-[var(--color-jungle-teal)]"
               />
-              <span className="text-sm font-medium text-slate-700">Repeat Weekly</span>
+              <span className="text-sm font-semibold text-gray-800">Repeat Meeting</span>
             </label>
 
             {isRecurring && (
-              <div className="mt-3 pl-6 animate-in slide-in-from-top-2">
-                <label className="block text-xs font-medium text-slate-500 mb-1">Number of weeks</label>
-                <input
-                  type="number"
-                  min={2}
-                  max={12}
-                  value={recurrenceCount}
-                  onChange={(e) => setRecurrenceCount(Number(e.target.value))}
-                  className="w-24 border border-slate-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
-                <p className="text-xs text-slate-400 mt-1">Total bookings: {recurrenceCount}</p>
+              <div className="mt-3 pl-6 space-y-3 animate-in slide-in-from-top-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Recurrence Frequency</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRecurrenceFrequency("DAILY")}
+                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition-colors ${
+                        recurrenceFrequency === "DAILY"
+                          ? "bg-[var(--color-jungle-teal)] text-white border-[var(--color-jungle-teal)]"
+                          : "bg-[var(--color-azure-mist)] text-gray-700 border-[var(--color-frozen-water)] hover:bg-[var(--color-frozen-water)]"
+                      }`}
+                    >
+                      Repeat Daily
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRecurrenceFrequency("WEEKLY")}
+                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition-colors ${
+                        recurrenceFrequency === "WEEKLY"
+                          ? "bg-[var(--color-jungle-teal)] text-white border-[var(--color-jungle-teal)]"
+                          : "bg-[var(--color-azure-mist)] text-gray-700 border-[var(--color-frozen-water)] hover:bg-[var(--color-frozen-water)]"
+                      }`}
+                    >
+                      Repeat Weekly
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Number of {recurrenceFrequency === "DAILY" ? "Days" : "Weeks"}
+                  </label>
+                  <input
+                    type="number"
+                    min={2}
+                    max={12}
+                    value={recurrenceCount}
+                    onChange={(e) => setRecurrenceCount(Number(e.target.value))}
+                    className="w-24 border border-[var(--color-frozen-water)] rounded-lg px-2.5 py-1 text-sm focus:ring-2 focus:ring-[var(--color-jungle-teal)] outline-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Total bookings: {recurrenceCount} ({recurrenceFrequency === "DAILY" ? "consecutive days" : "consecutive weeks"})
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100">
+            <div className="p-3 bg-red-50 text-red-700 text-xs rounded-lg border border-red-100 font-medium">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-frozen-water)]">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+              className="btn-secondary text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="btn-primary text-xs shadow-md shadow-[var(--color-jungle-teal)]/20 flex items-center gap-2"
             >
-              {isSubmitting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+              {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
               Confirm Booking
             </button>
           </div>
