@@ -12,7 +12,7 @@ const OFFICE_START_HOUR = 9;
 const OFFICE_END_HOUR = 19;
 const SLOT_DURATION_MINUTES = 30;
 const TOTAL_SLOTS = ((OFFICE_END_HOUR - OFFICE_START_HOUR) * 60) / SLOT_DURATION_MINUTES;
-const API_BASE = "https://full-spiders-battle.loca.lt";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 // Types
 interface Room {

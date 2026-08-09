@@ -9,7 +9,7 @@ interface CancelModalProps {
   onSuccess: () => void;
 }
 
-const API_BASE = "https://full-spiders-battle.loca.lt";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 type CancelMode = "single" | "series";
 

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { hashPassword, generateVerificationToken, hashToken, logDevVerificationEmail } from "@/lib/auth";
+import { hashPassword, generateVerificationToken, hashToken } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
 
 const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
@@ -69,8 +70,15 @@ export async function POST(req: Request) {
       },
     });
 
-    // Log verification link in dev console
-    logDevVerificationEmail(email, rawVerificationToken);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const verifyUrl = `${appUrl}/verify-email?token=${rawVerificationToken}`;
+
+    await sendEmail({
+      to: email,
+      subject: "Verify your email",
+      text: `Click here to verify: ${verifyUrl}`,
+      html: `<a href="${verifyUrl}">Verify Email</a>`,
+    });
 
     return NextResponse.json(
       {

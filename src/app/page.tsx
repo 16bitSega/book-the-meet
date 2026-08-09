@@ -23,7 +23,7 @@ interface Booking {
   recurringSeriesId?: string | null;
 }
 
-const API_BASE = "https://full-spiders-battle.loca.lt";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();

@@ -10,7 +10,7 @@ import CancelModal from "@/components/CancelModal";
 import { EmailVerificationBarrier } from "@/components/EmailVerificationBarrier";
 
 const KYIV_TIMEZONE = "Europe/Kyiv";
-const API_BASE = "https://full-spiders-battle.loca.lt";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 interface MyBookingItem {
   id: string;
