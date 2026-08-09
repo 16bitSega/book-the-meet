@@ -164,22 +164,26 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Render Mobile Side Drawer via React Portal directly into document.body */}
+      {/* Render Golden Ratio Mobile Side Drawer via React Portal directly into document.body */}
       {isMobileMenuOpen && mounted && createPortal(
-        <div className="md:hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-xs flex justify-start animate-in fade-in duration-200">
-          <div className="w-80 max-w-[85vw] bg-white h-[100dvh] shadow-2xl p-5 flex flex-col justify-between border-r border-[var(--color-frozen-water)] overflow-y-auto">
+        <div className="md:hidden fixed inset-0 z-[100] flex animate-in fade-in duration-200">
+          {/* Part A: Active Side Menu (Golden Ratio width: 61.8vw) */}
+          <div className="w-[61.8vw] max-w-xs bg-white h-[100dvh] shadow-2xl p-4 sm:p-5 flex flex-col justify-between border-r border-[var(--color-frozen-water)] overflow-y-auto relative z-10">
             <div className="space-y-6">
               {/* Header inside drawer */}
               <div className="flex justify-between items-center pb-4 border-b border-[var(--color-frozen-water)]">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-[var(--color-jungle-teal)] flex items-center justify-center text-white font-bold text-lg shadow-xs">
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--color-jungle-teal)] flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-xs">
                     B
                   </div>
-                  <span className="font-bold text-lg text-[var(--color-jungle-teal)]">BookTheMeet</span>
+                  <span className="font-bold text-base sm:text-lg text-[var(--color-jungle-teal)] tracking-tight">
+                    BookTheMeet
+                  </span>
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 font-bold text-base"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 font-bold text-sm"
+                  title="Close menu"
                 >
                   ✕
                 </button>
@@ -192,13 +196,13 @@ export function Navbar() {
                   <Link
                     href="/"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-colors ${
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
                       pathname === "/"
                         ? "bg-[var(--color-jungle-teal)] text-white shadow-xs"
                         : "text-gray-700 bg-[var(--color-azure-mist)]/50 hover:bg-[var(--color-azure-mist)]"
                     }`}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     Schedule Grid
@@ -206,13 +210,13 @@ export function Navbar() {
                   <Link
                     href="/my-bookings"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-colors ${
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-xl font-bold text-xs sm:text-sm transition-colors ${
                       pathname === "/my-bookings"
                         ? "bg-[var(--color-jungle-teal)] text-white shadow-xs"
                         : "text-gray-700 bg-[var(--color-azure-mist)]/50 hover:bg-[var(--color-azure-mist)]"
                     }`}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002-2h2a2 2 0 002 2" />
                     </svg>
                     My Bookings
@@ -241,7 +245,7 @@ export function Navbar() {
             {/* Mobile User Footer Info & Logout */}
             {user && (
               <div className="pt-4 border-t border-[var(--color-frozen-water)] space-y-3 mt-6">
-                <div className="bg-[var(--color-azure-mist)] p-3.5 rounded-xl border border-[var(--color-frozen-water)]">
+                <div className="bg-[var(--color-azure-mist)] p-3 rounded-xl border border-[var(--color-frozen-water)]">
                   <p className="text-xs font-bold text-gray-900">{user.name || user.email}</p>
                   <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
                   {!user.isEmailVerified && (
@@ -262,6 +266,13 @@ export function Navbar() {
               </div>
             )}
           </div>
+
+          {/* Part B: Outside Backdrop (Golden Ratio width: 38.2vw) - Tap outside to close, no cross icon */}
+          <div
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="flex-1 bg-slate-900/60 backdrop-blur-xs cursor-pointer h-[100dvh]"
+            aria-label="Close menu backdrop"
+          />
         </div>,
         document.body
       )}

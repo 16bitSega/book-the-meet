@@ -342,7 +342,7 @@ export default function ScheduleGrid({
             {timeSlots.map((minutes) => (
               <div
                 key={minutes}
-                className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-gray-50 hover:bg-[var(--color-azure-mist)]/20 transition-colors group"
+                className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-gray-50 hover:bg-[var(--color-azure-mist)]/25 transition-colors"
               >
                 {/* Time Label */}
                 <div className="p-2.5 text-xs font-medium text-gray-400 text-center border-r border-[var(--color-frozen-water)] bg-white sticky left-0 z-10 font-mono">
@@ -409,16 +409,18 @@ export default function ScheduleGrid({
                       </div>
                     );
                   } else {
-                    // Empty available slot: Full cell Jungle Teal hover highlight without small center dots
+                    // Empty slot: ONLY show "+ Book" on the SPECIFIC cell being hovered over!
                     cellContent = (
                       <div
                         onClick={() => {
                           const utcIso = formatInTimeZone(slotStartKyiv, KYIV_TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX");
                           onSlotClick(utcIso, selectedRoomId);
                         }}
-                        className="h-full w-full rounded-lg text-xs font-semibold text-transparent group-hover:text-[var(--color-jungle-teal)] group-hover:bg-[var(--color-azure-mist)] border border-transparent group-hover:border-[var(--color-frozen-water)] transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+                        className="h-full w-full rounded-lg text-xs font-semibold text-transparent hover:text-[var(--color-jungle-teal)] hover:bg-[var(--color-azure-mist)] border border-transparent hover:border-[var(--color-frozen-water)] transition-all flex items-center justify-center cursor-pointer shadow-2xs group/cell"
                       >
-                        + Book
+                        <span className="opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                          + Book
+                        </span>
                       </div>
                     );
                   }
