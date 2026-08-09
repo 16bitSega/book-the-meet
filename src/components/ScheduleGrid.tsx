@@ -5,6 +5,7 @@ import { format, addWeeks, subWeeks, startOfWeek, isSameDay, setHours, setMinute
 import { toZonedTime, formatInTimeZone } from "date-fns-tz";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState } from "./EmptyState";
+import { CustomSelect } from "./CustomSelect";
 
 // Constants
 const KYIV_TIMEZONE = "Europe/Kyiv";
@@ -220,6 +221,15 @@ export default function ScheduleGrid({
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
   };
 
+  const roomSelectOptions = useMemo(
+    () =>
+      rooms.map((r) => ({
+        label: `${r.name} (Fl. ${r.floor || 1}, Cap. ${r.capacity})`,
+        value: r.id,
+      })),
+    [rooms]
+  );
+
   if (!rooms.length) return null;
 
   return (
@@ -259,28 +269,16 @@ export default function ScheduleGrid({
           </button>
         </div>
 
-        {/* Room Selector & Timezone Badge */}
+        {/* Custom Styled Room Selector & Timezone Badge */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          <div className="relative w-full lg:w-72">
-            <select
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full appearance-none bg-white border border-[var(--color-frozen-water)] text-gray-800 text-sm font-semibold py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-jungle-teal)] cursor-pointer truncate shadow-2xs"
-            >
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} (Fl. {r.floor || 1}, Cap. {r.capacity})
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-[var(--color-jungle-teal)]">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
-          </div>
+          <CustomSelect
+            options={roomSelectOptions}
+            value={selectedRoomId}
+            onChange={(val) => setSelectedRoomId(String(val))}
+            className="w-full lg:w-72"
+          />
 
-          <div className="hidden sm:flex items-center gap-2 bg-[var(--color-mint-cream)] px-3 py-2 rounded-lg border border-[var(--color-frozen-water)] shrink-0">
+          <div className="hidden sm:flex items-center gap-2 bg-[var(--color-mint-cream)] px-3 py-2.5 rounded-xl border border-[var(--color-frozen-water)] shrink-0">
             <div className="w-2 h-2 rounded-full bg-[var(--color-jungle-teal)] animate-pulse"></div>
             <span className="text-xs font-semibold text-[var(--color-jungle-teal)]">Kyiv Time</span>
           </div>
@@ -298,7 +296,7 @@ export default function ScheduleGrid({
       )}
 
       {/* Grid Container */}
-      <div className="overflow-x-auto relative">
+      <div className="overflow-x-auto relative max-h-[75vh]">
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 z-20 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-[var(--color-frozen-water)] border-t-[var(--color-jungle-teal)]"></div>
@@ -306,9 +304,11 @@ export default function ScheduleGrid({
         )}
 
         <div className="min-w-[850px]">
-          {/* Header Row */}
-          <div className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-[var(--color-frozen-water)] bg-[var(--color-azure-mist)]/30">
-            <div className="p-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center">Time</div>
+          {/* Sticky Days Header Row */}
+          <div className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-[var(--color-frozen-water)] bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-2xs">
+            <div className="p-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center border-r border-[var(--color-frozen-water)]/40">
+              Time
+            </div>
             {weekDays.map((day, i) => {
               const isToday = isSameDay(toZonedTime(new Date(), KYIV_TIMEZONE), day);
               return (
@@ -342,7 +342,7 @@ export default function ScheduleGrid({
             {timeSlots.map((minutes) => (
               <div
                 key={minutes}
-                className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-gray-50 hover:bg-[var(--color-azure-mist)]/10 transition-colors group"
+                className="grid grid-cols-[65px_repeat(7,1fr)] border-b border-gray-50 hover:bg-[var(--color-azure-mist)]/20 transition-colors group"
               >
                 {/* Time Label */}
                 <div className="p-2.5 text-xs font-medium text-gray-400 text-center border-r border-[var(--color-frozen-water)] bg-white sticky left-0 z-10 font-mono">
@@ -409,15 +409,16 @@ export default function ScheduleGrid({
                       </div>
                     );
                   } else {
+                    // Empty available slot: Full cell Jungle Teal hover highlight without small center dots
                     cellContent = (
                       <div
                         onClick={() => {
                           const utcIso = formatInTimeZone(slotStartKyiv, KYIV_TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX");
                           onSlotClick(utcIso, selectedRoomId);
                         }}
-                        className="h-full w-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                        className="h-full w-full rounded-lg text-xs font-semibold text-transparent group-hover:text-[var(--color-jungle-teal)] group-hover:bg-[var(--color-azure-mist)] border border-transparent group-hover:border-[var(--color-frozen-water)] transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                       >
-                        <div className="w-3 h-3 rounded-full bg-[var(--color-jungle-teal)]/30 border-2 border-[var(--color-jungle-teal)] group-hover:scale-125 transition-transform"></div>
+                        + Book
                       </div>
                     );
                   }

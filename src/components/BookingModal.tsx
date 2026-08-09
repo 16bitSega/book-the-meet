@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { formatInTimeZone } from "date-fns-tz";
 import { addMinutes } from "date-fns";
+import { CustomSelect } from "./CustomSelect";
 
 interface BookingModalProps {
   startTimeIso: string;
@@ -15,6 +16,17 @@ interface BookingModalProps {
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 type RecurrenceFrequency = "DAILY" | "WEEKLY" | "BIWEEKLY" | "MONTHLY";
+
+const DURATION_OPTIONS = [
+  { label: "30 mins", value: 30 },
+  { label: "1 hour", value: 60 },
+  { label: "1.5 hours", value: 90 },
+  { label: "2 hours", value: 120 },
+  { label: "2.5 hours", value: 150 },
+  { label: "3 hours", value: 180 },
+  { label: "3.5 hours", value: 210 },
+  { label: "4 hours", value: 240 },
+];
 
 export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess }: BookingModalProps) {
   const { user } = useAuth();
@@ -114,27 +126,11 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Duration (minutes)</label>
-            <div className="relative w-full">
-              <select
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full appearance-none bg-white border border-[var(--color-frozen-water)] text-gray-800 text-sm font-semibold py-2.5 pl-3.5 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-jungle-teal)] cursor-pointer truncate shadow-2xs"
-              >
-                <option value={30}>30 mins</option>
-                <option value={60}>1 hour</option>
-                <option value={90}>1.5 hours</option>
-                <option value={120}>2 hours</option>
-                <option value={150}>2.5 hours</option>
-                <option value={180}>3 hours</option>
-                <option value={210}>3.5 hours</option>
-                <option value={240}>4 hours</option>
-              </select>
-              <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 pointer-events-none text-[var(--color-jungle-teal)]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </div>
-            </div>
+            <CustomSelect
+              options={DURATION_OPTIONS}
+              value={duration}
+              onChange={(val) => setDuration(Number(val))}
+            />
           </div>
 
           <div className="pt-2 border-t border-[var(--color-frozen-water)]">
