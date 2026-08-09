@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import ScheduleGrid from "@/components/ScheduleGrid";
 import BookingModal from "@/components/BookingModal";
 import CancelModal from "@/components/CancelModal";
@@ -10,6 +10,8 @@ import { GridSkeleton } from "@/components/Skeletons";
 import { EmptyState } from "@/components/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { isSameDay, format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 // Types
 interface Booking {
@@ -23,6 +25,7 @@ interface Booking {
   recurringSeriesId?: string | null;
 }
 
+const KYIV_TIMEZONE = "Europe/Kyiv";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 export default function Home() {
@@ -65,6 +68,17 @@ export default function Home() {
     else setIsLoading(false);
   }, [user, fetchBookings]);
 
+  // Find user's meeting for today
+  const todayMeeting = useMemo(() => {
+    if (!user || !bookings || bookings.length === 0) return null;
+    const nowKyiv = toZonedTime(new Date(), KYIV_TIMEZONE);
+
+    return bookings.find((b) => {
+      const bStartKyiv = toZonedTime(new Date(b.startTime), KYIV_TIMEZONE);
+      return isSameDay(nowKyiv, bStartKyiv);
+    });
+  }, [user, bookings]);
+
   const handleSlotClick = (timeIso: string, roomId: string) => {
     if (!user) {
       router.push("/login");
@@ -106,14 +120,26 @@ export default function Home() {
               <span className="font-semibold text-[var(--color-jungle-teal)]">Kyiv Time (Europe/Kyiv)</span>.
             </p>
           </div>
+
+          {/* Today's Reserved Meeting Alert Badge */}
           {user && (
-            <div className="flex items-center gap-3 bg-[var(--color-azure-mist)] px-4 py-2.5 rounded-xl border border-[var(--color-frozen-water)] shadow-2xs">
-              <div className="w-8 h-8 rounded-full bg-[var(--color-jungle-teal)] flex items-center justify-center text-white font-bold text-sm">
-                {user.name?.charAt(0) || user.email.charAt(0)}
+            <div className="flex items-center gap-3 bg-[var(--color-azure-mist)] px-4 py-3 rounded-xl border border-[var(--color-frozen-water)] shadow-xs">
+              <div className="w-8 h-8 rounded-full bg-[var(--color-jungle-teal)]/15 text-[var(--color-jungle-teal)] flex items-center justify-center font-bold text-base shrink-0">
+                📅
               </div>
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Logged in as</p>
-                <p className="text-xs font-bold text-[var(--color-jungle-teal)]">{user.email}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Today's Schedule</p>
+                {todayMeeting ? (
+                  <p className="text-xs font-bold text-[var(--color-jungle-teal)]">
+                    Your reserved meeting is today at{" "}
+                    <span className="underline">
+                      {format(toZonedTime(new Date(todayMeeting.startTime), KYIV_TIMEZONE), "HH:mm")}
+                    </span>{" "}
+                    ({todayMeeting.title || "Meeting"})
+                  </p>
+                ) : (
+                  <p className="text-xs font-semibold text-gray-600">No reserved meetings scheduled for today</p>
+                )}
               </div>
             </div>
           )}
