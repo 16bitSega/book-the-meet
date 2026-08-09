@@ -14,7 +14,7 @@ interface BookingModalProps {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
-type RecurrenceFrequency = "DAILY" | "WEEKLY";
+type RecurrenceFrequency = "DAILY" | "WEEKLY" | "BIWEEKLY" | "MONTHLY";
 
 export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess }: BookingModalProps) {
   const { user } = useAuth();
@@ -66,13 +66,31 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
         return;
       }
 
-      if (!res.ok) throw new Error("Failed to create booking");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.message || "Failed to create booking.");
+        setIsSubmitting(false);
+        return;
+      }
 
       onSuccess();
       onClose();
     } catch {
       setError("An error occurred. Please try again.");
       setIsSubmitting(false);
+    }
+  };
+
+  const getFrequencyUnitLabel = () => {
+    switch (recurrenceFrequency) {
+      case "DAILY":
+        return "days";
+      case "WEEKLY":
+        return "weeks";
+      case "BIWEEKLY":
+        return "bi-weekly cycles (every 2 weeks)";
+      case "MONTHLY":
+        return "months";
     }
   };
 
@@ -124,14 +142,14 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
             </label>
 
             {isRecurring && (
-              <div className="mt-3 pl-6 space-y-3 animate-in slide-in-from-top-2">
+              <div className="mt-3 space-y-3 animate-in slide-in-from-top-2">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Recurrence Frequency</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Recurrence Frequency</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setRecurrenceFrequency("DAILY")}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition-colors ${
+                      className={`py-1.5 px-2.5 rounded-lg text-xs font-bold border transition-colors ${
                         recurrenceFrequency === "DAILY"
                           ? "bg-[var(--color-jungle-teal)] text-white border-[var(--color-jungle-teal)]"
                           : "bg-[var(--color-azure-mist)] text-gray-700 border-[var(--color-frozen-water)] hover:bg-[var(--color-frozen-water)]"
@@ -142,7 +160,7 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
                     <button
                       type="button"
                       onClick={() => setRecurrenceFrequency("WEEKLY")}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition-colors ${
+                      className={`py-1.5 px-2.5 rounded-lg text-xs font-bold border transition-colors ${
                         recurrenceFrequency === "WEEKLY"
                           ? "bg-[var(--color-jungle-teal)] text-white border-[var(--color-jungle-teal)]"
                           : "bg-[var(--color-azure-mist)] text-gray-700 border-[var(--color-frozen-water)] hover:bg-[var(--color-frozen-water)]"
@@ -150,12 +168,34 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
                     >
                       Repeat Weekly
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setRecurrenceFrequency("BIWEEKLY")}
+                      className={`py-1.5 px-2.5 rounded-lg text-xs font-bold border transition-colors ${
+                        recurrenceFrequency === "BIWEEKLY"
+                          ? "bg-[var(--color-jungle-teal)] text-white border-[var(--color-jungle-teal)]"
+                          : "bg-[var(--color-azure-mist)] text-gray-700 border-[var(--color-frozen-water)] hover:bg-[var(--color-frozen-water)]"
+                      }`}
+                    >
+                      Bi-weekly
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRecurrenceFrequency("MONTHLY")}
+                      className={`py-1.5 px-2.5 rounded-lg text-xs font-bold border transition-colors ${
+                        recurrenceFrequency === "MONTHLY"
+                          ? "bg-[var(--color-jungle-teal)] text-white border-[var(--color-jungle-teal)]"
+                          : "bg-[var(--color-azure-mist)] text-gray-700 border-[var(--color-frozen-water)] hover:bg-[var(--color-frozen-water)]"
+                      }`}
+                    >
+                      Monthly
+                    </button>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Number of {recurrenceFrequency === "DAILY" ? "Days" : "Weeks"}
+                    Number of Repetitions ({getFrequencyUnitLabel()})
                   </label>
                   <input
                     type="number"
@@ -166,7 +206,7 @@ export default function BookingModal({ startTimeIso, roomId, onClose, onSuccess 
                     className="w-24 border border-[var(--color-frozen-water)] rounded-lg px-2.5 py-1 text-sm focus:ring-2 focus:ring-[var(--color-jungle-teal)] outline-none"
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Total bookings: {recurrenceCount} ({recurrenceFrequency === "DAILY" ? "consecutive days" : "consecutive weeks"})
+                    Total bookings: {recurrenceCount} ({getFrequencyUnitLabel()})
                   </p>
                 </div>
               </div>

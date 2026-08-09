@@ -285,6 +285,10 @@ export default function ScheduleGrid({
                   const booking = getBookingForCell(day, minutes);
                   const isMyBooking = booking?.userId === user?.id;
 
+                  const nowKyiv = toZonedTime(new Date(), KYIV_TIMEZONE);
+                  const slotStartKyiv = setMinutes(setHours(day, Math.floor(minutes / 60)), minutes % 60);
+                  const isPast = slotStartKyiv.getTime() <= nowKyiv.getTime();
+
                   let cellContent = null;
                   let cellClass = "border-l border-gray-50 p-1.5 relative transition-all duration-200 min-h-[48px]";
 
@@ -325,12 +329,20 @@ export default function ScheduleGrid({
                         </span>
                       </div>
                     );
+                  } else if (isPast) {
+                    cellClass = "border-l border-gray-50 p-1.5 relative bg-slate-50/40 cursor-not-allowed min-h-[48px] opacity-40";
+                    cellContent = (
+                      <div
+                        title="Past time slot cannot be booked"
+                        className="h-full w-full flex items-center justify-center"
+                      >
+                        <span className="text-[10px] text-gray-400 font-mono">✕</span>
+                      </div>
+                    );
                   } else {
                     cellContent = (
                       <div
                         onClick={() => {
-                          const slotStartKyiv = new Date(day);
-                          slotStartKyiv.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
                           const utcIso = formatInTimeZone(slotStartKyiv, KYIV_TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX");
                           onSlotClick(utcIso, selectedRoomId);
                         }}

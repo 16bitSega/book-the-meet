@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { addWeeks, addDays, getHours, getMinutes } from "date-fns";
+import { addWeeks, addDays, addMonths, getHours, getMinutes } from "date-fns";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { validateCsrf, checkRateLimit } from "@/lib/middleware";
@@ -12,10 +12,14 @@ import { isValidDuration, is30MinAligned } from "@/lib/interval";
 const createBookingSchema = z.object({
   roomId: z.string().uuid(),
   title: z.string().trim().min(1).max(100),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
+  startTime: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid ISO date string for startTime",
+  }),
+  endTime: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid ISO date string for endTime",
+  }),
   isRecurring: z.boolean().optional(),
-  recurrenceFrequency: z.enum(["DAILY", "WEEKLY"]).optional().default("WEEKLY"),
+  recurrenceFrequency: z.enum(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY"]).optional().default("WEEKLY"),
   recurrenceCount: z.number().int().min(1).max(12).optional(),
 });
 
@@ -212,11 +216,25 @@ export async function POST(req: NextRequest) {
     const endM = getMinutes(endKyiv);
 
     for (let k = 0; k < effectiveCount; k++) {
-      // Step k days or weeks forward in Kyiv wall-clock time
-      const instanceStartKyiv = recurrenceFrequency === "DAILY" ? addDays(startKyiv, k) : addWeeks(startKyiv, k);
-      instanceStartKyiv.setHours(startH, startM, 0, 0);
+      let instanceStartKyiv: Date;
+      let instanceEndKyiv: Date;
 
-      const instanceEndKyiv = recurrenceFrequency === "DAILY" ? addDays(endKyiv, k) : addWeeks(endKyiv, k);
+      if (recurrenceFrequency === "DAILY") {
+        instanceStartKyiv = addDays(startKyiv, k);
+        instanceEndKyiv = addDays(endKyiv, k);
+      } else if (recurrenceFrequency === "BIWEEKLY") {
+        instanceStartKyiv = addWeeks(startKyiv, k * 2);
+        instanceEndKyiv = addWeeks(endKyiv, k * 2);
+      } else if (recurrenceFrequency === "MONTHLY") {
+        instanceStartKyiv = addMonths(startKyiv, k);
+        instanceEndKyiv = addMonths(endKyiv, k);
+      } else {
+        // DEFAULT: WEEKLY
+        instanceStartKyiv = addWeeks(startKyiv, k);
+        instanceEndKyiv = addWeeks(endKyiv, k);
+      }
+
+      instanceStartKyiv.setHours(startH, startM, 0, 0);
       instanceEndKyiv.setHours(endH, endM, 0, 0);
 
       const instStartUtc = fromZonedTime(instanceStartKyiv, KYIV_TIMEZONE);
