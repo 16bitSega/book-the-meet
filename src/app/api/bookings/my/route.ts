@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
   }));
 
   return NextResponse.json({
+    bookings: formattedBookings,
     data: formattedBookings,
     pagination: {
       page,

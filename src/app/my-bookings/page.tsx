@@ -56,9 +56,9 @@ export default function MyBookingsPage() {
       );
 
       if (res.ok) {
-        const data = await res.json();
-        setBookings(data.bookings || []);
-        setTotalPages(data.pagination?.totalPages || 1);
+        const resData = await res.json();
+        setBookings(resData.bookings || resData.data || []);
+        setTotalPages(resData.pagination?.totalPages || 1);
       }
     } catch (err) {
       console.error("Failed to fetch my bookings:", err);
@@ -89,28 +89,28 @@ export default function MyBookingsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      <div className="flex min-h-[70vh] items-center justify-center bg-[var(--color-mint-cream)]">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-frozen-water)] border-t-[var(--color-jungle-teal)]"></div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+    <main className="min-h-screen bg-[var(--color-mint-cream)] p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white rounded-2xl shadow-xs border border-[var(--color-frozen-water)]">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-jungle-teal)]">
               My Bookings Dashboard
             </h1>
-            <p className="text-slate-600 text-sm mt-1">
+            <p className="text-gray-600 text-sm mt-1">
               View and manage your upcoming and past meeting room reservations.
             </p>
           </div>
           <Link
             href="/"
-            className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+            className="btn-primary text-xs flex items-center gap-1.5 shadow-md shadow-[var(--color-jungle-teal)]/20"
           >
             ← Back to Schedule Grid
           </Link>
@@ -124,7 +124,7 @@ export default function MyBookingsPage() {
         )}
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 gap-6">
+        <div className="flex border-b border-[var(--color-frozen-water)] gap-6">
           <button
             onClick={() => {
               setActiveTab("upcoming");
@@ -132,8 +132,8 @@ export default function MyBookingsPage() {
             }}
             className={`pb-3 text-sm font-semibold transition-colors relative ${
               activeTab === "upcoming"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-slate-500 hover:text-slate-700"
+                ? "text-[var(--color-jungle-teal)] border-b-2 border-[var(--color-jungle-teal)]"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             Upcoming Reservations
@@ -145,8 +145,8 @@ export default function MyBookingsPage() {
             }}
             className={`pb-3 text-sm font-semibold transition-colors relative ${
               activeTab === "past"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-slate-500 hover:text-slate-700"
+                ? "text-[var(--color-jungle-teal)] border-b-2 border-[var(--color-jungle-teal)]"
+                : "text-gray-500 hover:text-gray-700"
             }`}
           >
             Past History
@@ -155,21 +155,23 @@ export default function MyBookingsPage() {
 
         {/* Content List */}
         {loading ? (
-          <div className="flex min-h-[300px] items-center justify-center rounded-2xl bg-white p-8 border border-slate-200">
+          <div className="flex min-h-[300px] items-center justify-center rounded-2xl bg-white p-8 border border-[var(--color-frozen-water)]">
             <div className="text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-              <p className="mt-3 text-xs font-medium text-slate-500">Loading your reservations...</p>
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-frozen-water)] border-t-[var(--color-jungle-teal)]"></div>
+              <p className="mt-3 text-xs font-medium text-gray-500">Loading your reservations...</p>
             </div>
           </div>
         ) : bookings.length === 0 ? (
-          <div className="glass-card rounded-2xl p-12 text-center border border-slate-200">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 text-xl font-bold">
-              📅
+          <div className="bg-white rounded-2xl p-12 text-center border border-[var(--color-frozen-water)] shadow-xs">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-azure-mist)] text-[var(--color-jungle-teal)]">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
-            <h3 className="mt-4 text-base font-semibold text-slate-900">
+            <h3 className="mt-4 text-base font-bold text-gray-900">
               No {activeTab} bookings found
             </h3>
-            <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto">
+            <p className="mt-1 text-xs text-gray-500 max-w-sm mx-auto">
               {activeTab === "upcoming"
                 ? "You haven't reserved any upcoming meeting room slots yet."
                 : "No past meeting history found."}
@@ -177,7 +179,7 @@ export default function MyBookingsPage() {
             {activeTab === "upcoming" && (
               <Link
                 href="/"
-                className="mt-6 inline-block rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-md hover:bg-blue-700 transition-colors"
+                className="mt-6 inline-block btn-primary text-xs shadow-md shadow-[var(--color-jungle-teal)]/20"
               >
                 Book a Slot Now
               </Link>
@@ -193,42 +195,42 @@ export default function MyBookingsPage() {
               return (
                 <div
                   key={b.id}
-                  className={`glass-card rounded-2xl p-5 border transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+                  className={`bg-white rounded-2xl p-5 border transition-all flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs ${
                     isCancelled
-                      ? "border-slate-200 bg-slate-50/60 opacity-70"
-                      : "border-slate-200 hover:border-blue-300 hover:shadow-md"
+                      ? "border-gray-200 bg-gray-50/60 opacity-70"
+                      : "border-[var(--color-frozen-water)] hover:border-[var(--color-muted-teal)] hover:shadow-md"
                   }`}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-base font-bold text-slate-900">
+                      <h3 className="text-base font-bold text-gray-900">
                         {b.title || "Meeting"}
                       </h3>
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
                           isCancelled
                             ? "bg-red-50 text-red-700 border-red-200"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "badge-success"
                         }`}
                       >
                         {b.status}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
                       <span>
-                        📍 Room: <strong className="text-slate-800">{b.roomName || "Office Room"}</strong>
+                        📍 Room: <strong className="text-gray-800">{b.roomName || "Office Room"}</strong>
                       </span>
                       <span>
                         🕒 Kyiv Time:{" "}
-                        <strong className="text-slate-800">
+                        <strong className="text-[var(--color-jungle-teal)]">
                           {format(startKyiv, "EEEE, MMM dd 'at' HH:mm")} - {format(endKyiv, "HH:mm")}
                         </strong>
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end border-t sm:border-0 pt-3 sm:pt-0 border-slate-100">
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end border-t sm:border-0 pt-3 sm:pt-0 border-gray-100">
                     {!isCancelled && activeTab === "upcoming" && (
                       <button
                         onClick={() => handleCancelClick(b)}
@@ -240,7 +242,7 @@ export default function MyBookingsPage() {
 
                     <Link
                       href="/"
-                      className="rounded-lg bg-slate-100 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition-colors"
+                      className="btn-secondary text-xs"
                     >
                       View in Grid →
                     </Link>
@@ -255,17 +257,17 @@ export default function MyBookingsPage() {
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                  className="rounded-lg bg-white px-4 py-2 text-xs font-semibold text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                  className="btn-secondary text-xs disabled:opacity-40"
                 >
                   ← Previous
                 </button>
-                <span className="text-xs font-medium text-slate-600">
+                <span className="text-xs font-medium text-gray-600">
                   Page {page} of {totalPages}
                 </span>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="rounded-lg bg-white px-4 py-2 text-xs font-semibold text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                  className="btn-secondary text-xs disabled:opacity-40"
                 >
                   Next →
                 </button>

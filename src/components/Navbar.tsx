@@ -2,13 +2,19 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
   const { user, logout, resendVerification, loading: authLoading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [resendStatus, setResendStatus] = useState<string | null>(null);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
   const handleResend = async () => {
     setResendStatus("Sending...");
@@ -96,7 +102,7 @@ export function Navbar() {
                   </div>
 
                   <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="btn-secondary text-xs py-1.5 px-3"
                   >
                     Logout

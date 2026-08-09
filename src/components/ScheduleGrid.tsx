@@ -54,11 +54,38 @@ export default function ScheduleGrid({
   const [isLoading, setIsLoading] = useState(!initialRooms || initialRooms.length === 0);
 
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramWeek = urlParams.get("weekStart");
+      const savedWeek = localStorage.getItem("bookmeet_week_start");
+      const targetWeekStr = paramWeek || savedWeek;
+      if (targetWeekStr) {
+        try {
+          const parsed = parseISO(targetWeekStr);
+          if (!isNaN(parsed.getTime())) {
+            return startOfWeek(toZonedTime(parsed, KYIV_TIMEZONE), { weekStartsOn: 1 });
+          }
+        } catch {}
+      }
+    }
     const nowKyiv = toZonedTime(new Date(), KYIV_TIMEZONE);
     return startOfWeek(nowKyiv, { weekStartsOn: 1 });
   });
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+
+  // Persist current week in URL & localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const formatted = format(currentWeekStart, "yyyy-MM-dd");
+      localStorage.setItem("bookmeet_week_start", formatted);
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("weekStart") !== formatted) {
+        url.searchParams.set("weekStart", formatted);
+        window.history.replaceState(null, "", url.toString());
+      }
+    }
+  }, [currentWeekStart]);
 
   // Sync initial props if provided
   useEffect(() => {
